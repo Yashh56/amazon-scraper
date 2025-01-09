@@ -2,13 +2,12 @@ import express from "express";
 import dotenv from "dotenv";
 import { fetchProductDetails } from "./details.js";
 dotenv.config();
-const app = express();
 const PORT = process.env.PORT || 4000;
-
+const app = express();
 app.use(express.json());
 
 app.get("/", (req, res) => {
-  res.send("Welcome to Amazon Product Details API!");
+  res.send("Welcome to Amazon Scraper API");
 });
 
 app.post("/scrape", async (req, res) => {
@@ -18,13 +17,18 @@ app.post("/scrape", async (req, res) => {
       .status(400)
       .json({ error: "Invalid input. Provide an array of ASINs." });
   }
-  const results = [];
-  for (const asin of asins) {
-    const details = await fetchProductDetails(asin);
-    results.push({ ASIN: asin, ...details });
+  try {
+    const results = await Promise.all(
+      asins.map(async (asin) => {
+        return await fetchProductDetails(asin);
+      })
+    );
+    res.json(results);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: "An error occurred while fetching products." });
   }
-
-  res.json(results);
 });
 
 app.listen(PORT, () => {
